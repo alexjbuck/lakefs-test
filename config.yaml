@@ -1,0 +1,21 @@
+---
+database:
+  type: "postgres"
+  postgres:
+    connection_string: "postgres://lakefs:lakefs@postgres:5432/lakefs?sslmode=disable"
+  
+auth:
+  encrypt:
+    # replace this with a randomly-generated string. Make sure to keep it safe!
+    secret_key: "some secret"
+   
+blockstore:
+  type: s3
+  s3:
+     force_path_style: true
+     endpoint: http://minio:9000
+     discover_bucket_region: false
+     credentials:
+        access_key_id: minioadmin
+        secret_access_key: minioadmin
+

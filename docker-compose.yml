@@ -1,0 +1,52 @@
+services:
+    minio:
+        image: minio/minio
+        environment:
+            minio_access_key: minioadmin
+            minio_secret_key: minioadmin
+        volumes:
+            - minio_data:/data
+        ports:
+            - 9000:9000
+            - 9001:9001
+        command: server /data --console-address :9001
+
+    createbuckets:
+        image: minio/mc
+        depends_on:
+          - minio
+        entrypoint: /bin/sh -c "
+          /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+          /usr/bin/mc mb myminio/data-lake;
+          /usr/bin/mc anonymous set public myminio/data-lake;
+          exit 0;"
+
+    postgres:
+        image: postgres
+        environment: 
+            POSTGRES_USER: lakefs
+            POSTGRES_PASSWORD: lakefs
+        volumes:
+            - pg_data:/var/lib/postgresql/data
+        healthcheck:
+            test: pg_isready -U lakefs -d lakefs
+            interval: 1s
+            timeout: 2s
+            retries: 3
+
+    lakefs:
+        image: treeverse/lakefs
+        ports:
+            - 8000:8000
+        volumes:
+            - ./config.yaml:/etc/config.yaml
+        command: run --config /etc/config.yaml
+        depends_on:
+            minio:
+                condition: service_started        
+            postgres:
+                condition: service_healthy
+
+volumes:
+    minio_data:
+    pg_data:
